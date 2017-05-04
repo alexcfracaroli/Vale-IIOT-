@@ -1,0 +1,53 @@
+
+//Include always this library when you are using the Wasp232 functions  
+#include <Wasp232.h>
+
+uint8_t error;
+uint8_t data[] = {0xFF, 0x00, 0x04, 0x1D, 0x0B};
+
+void setup() {
+
+  // Power on the USB for viewing data in the serial monitor.  
+  // Note : if you are using the socket 0 for communication, 
+  // for viewing data in the serial monitor, you should open
+  // the USB at the same speed. 
+  USB.ON();
+  delay(100);
+
+
+  // Powers on the module and assigns the UART in socket0
+  W232.ON(SOCKET0);
+
+  // Configure the baud rate of the module
+  W232.baudRateConfig(9600);
+
+  // Configure the parity bit as disabled 
+  W232.parityBit(NONE);
+
+  // Use one stop bit configuration
+  W232.stopBitConfig(1);
+
+  // Send 
+  USB.println(" Send Data to ThingMagic: ");
+  
+  for(int i=0; i<sizeof(data); i++)
+  {
+    W232.send( data[i] );
+    USB.printHex(data[i]);
+  }
+
+}
+
+void loop() 
+{
+  
+  USB.println(" Recive Data to ThingMagic: ");
+  
+  if(W232.receive() > 0)
+  { 
+    USB.printHex(W232._buffer, W232._length);
+    USB.println(F(""));
+  }
+
+  delay(100);
+}
