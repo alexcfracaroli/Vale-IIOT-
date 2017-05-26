@@ -1,0 +1,164 @@
+/*
+
+- Code digimesh MAC.
+- Basic TX code 
+- Version:           0.1 
+- Implementation:    Alex and Tom
+
+*/
+
+#include <WaspXBeeDM.h>
+#include <WaspFrame.h>
+
+
+// deifne variable to get running time
+unsigned long startTime;
+
+// PAN (Personal Area Network) Identifier
+uint8_t  panID[2] = {0x7F,0xFF}; 
+
+// Define Unicast
+//////////////////////////////////////////
+char RX_ADDRESS[] = "0013A200408DE1AD";
+
+// Define the Waspmote ID
+char WASPMOTE_ID[] = "MGTEST-MG6";
+
+// define variable
+uint8_t error;
+
+void setup()
+{
+  // Init USB port
+  USB.ON();
+  USB.println(F("Router 6 MG MAC"));
+
+  // init RTC 
+  RTC.ON();
+
+  //////////////////////////
+  // 1. XBee setup
+  //////////////////////////
+
+  // 1.1. init XBee
+  xbeeDM.ON();
+  
+//%%%%%%%%%%%%%%%%%%%%%%%%Slepp setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  // 1.4. set sleep mode for cyclic sleep mode
+  xbeeDM.setSleepMode(0);  
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% End Sleep %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Setup Radio X900 %%%%%%%%%%%%%%%%%%%%%%%
+
+// set Waspmote identifier
+  frame.setID(WASPMOTE_ID);
+  xbeeDM.setNodeIdentifier(WASPMOTE_ID);
+
+   /////////////////////////////////////
+  // 2. set PANID
+  /////////////////////////////////////
+  xbeeDM.setPAN( panID );
+  // check the AT commmand execution flag
+  if( xbeeDM.error_AT == 0 ) 
+  {
+    USB.print(F("1. PAN ID set OK to: 0x"));
+    USB.printHex( xbeeDM.PAN_ID[0] ); 
+    USB.printHex( xbeeDM.PAN_ID[1] ); 
+    USB.println();
+  }
+  else 
+  {
+    USB.println(F("1. Error calling 'setPAN()'"));  
+  }  
+  
+   // 1.5 Mesh Network Retries (4.7 manual digimesh)
+  xbeeDM.setMeshNetworkRetries(0x03); 
+  
+    // 1.6 Set Power Lever 
+ /*   
+    Parameter 	XBee-PRO
+    0 	         10dBm
+    1 	         12dBm
+    2 	         14dBm
+    3 	         16dBm 
+    4 	         18dBm
+  */    
+  xbeeDM.setPowerLevel(4);
+    
+  /////////////////////////////////////
+  // 5. write values to XBee module memory
+  /////////////////////////////////////
+  xbeeDM.writeValues();
+
+  // check the AT commmand execution flag
+  if( xbeeDM.error_AT == 0 ) 
+  {
+    USB.println(F("2. Changes stored OK"));
+  }
+  else 
+  {
+    USB.println(F("2. Error calling 'writeValues()'"));   
+  }
+
+  USB.println(F("-------------------------------")); 
+  
+  delay(500);
+  
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+//%%%%%%%%%%%%%%%%%%%%%%%%End Radio Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+}
+
+
+void loop()
+{  
+
+
+///////////////////////////////////////////
+// 3. Create ASCII frame or Create Binnary frame
+/////////////////////////////////////////// 
+
+///////////////////////////////////////////
+// Create ASCII frame
+/////////////////////////////////////////// 
+
+// Create new frame
+    USB.println(F("Create a new Frame:"));
+    frame.createFrame(MAX_FRAME);
+    
+// Create frame fields
+   frame.addSensor(SENSOR_STR, "MG6");
+   frame.addSensor(SENSOR_BAT, PWR.getBatteryLevel()); 
+  
+///////////////////////////////////////////
+// 4. Send packet
+///////////////////////////////////////////  
+
+// send XBee packet
+  error = xbeeDM.send( RX_ADDRESS, frame.buffer, frame.length );   
+  
+  delay(500);
+  
+  
+// check TX flag
+  if( error == 0 )
+  {
+    USB.println(F("send ok"));
+    
+// blink green LED
+    Utils.blinkGreenLED();
+    
+  }
+     else 
+  {
+     USB.println(F("send error"));
+    
+// blink red LED
+     Utils.blinkRedLED();
+}
+
+
+  delay(4000);
+}
